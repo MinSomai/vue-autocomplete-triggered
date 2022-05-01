@@ -36,19 +36,19 @@
   --section-gap: 160px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
+/* @media (prefers-color-scheme: dark) {                 */
+/*   :root {                                             */
+/*     --color-background: var(--vt-c-black);            */
+/*     --color-background-soft: var(--vt-c-black-soft);  */
+/*     --color-background-mute: var(--vt-c-black-mute);  */
 
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
+/*     --color-border: var(--vt-c-divider-dark-2);       */
+/*     --color-border-hover: var(--vt-c-divider-dark-1); */
 
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
-}
+/*     --color-heading: var(--vt-c-text-dark-1);         */
+/*     --color-text: var(--vt-c-text-dark-2);            */
+/*   }                                                   */
+/* }                                                     */
 
 *,
 *::before,
@@ -65,10 +65,37 @@ body {
   background: var(--color-background);
   transition: color 0.5s, background-color 0.5s;
   line-height: 1.6;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-    Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.vue-autocomplete-input {
+  background-clip: padding-box;
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  bottom: auto;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+  display: block;
+  font-size: 14px;
+  list-style: none;
+  padding: 1px;
+  position: absolute;
+  text-align: left;
+  z-index: 20000;
+}
+
+.vue-autocomplete-input > li {
+  cursor: pointer;
+  padding: 10px;
+  min-width: 100px;
+}
+
+.vue-autocomplete-input > li.active {
+  background-color: #337ab7;
+  color: #fff;
 }
