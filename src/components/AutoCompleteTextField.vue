@@ -5,6 +5,8 @@ import getInputSelection from "get-input-selection";
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputValue = ref<string>("");
 
+const enableSpaceRemovers = ref(false);
+
 interface State {
   helperVisible: boolean;
   left: number;
@@ -15,7 +17,7 @@ interface State {
   selection: number;
   top: number;
   value: string | null;
-  caret: object;
+  caretEnd: number;
 }
 
 const state: State = reactive({
@@ -28,10 +30,7 @@ const state: State = reactive({
   selection: 0,
   top: 0,
   value: null,
-  caret: {
-    start: 0,
-    end: 0
-  }
+  caretEnd: 0
 });
 
 let props = defineProps({
@@ -61,7 +60,7 @@ let props = defineProps({
     default: (trigger: string | Array<string>, slug: string) => trigger + slug
   },
   options: {
-    type: Array || Object, // array of string or obj
+    type: [Array, Object], // array of string or obj
     default: () => []
   },
   regex: {
@@ -89,7 +88,7 @@ let props = defineProps({
     default: " "
   },
   trigger: {
-    type: String || Array,
+    type: [String, Array],
     default: "@"
   },
   offsetX: {
@@ -111,16 +110,156 @@ let props = defineProps({
 });
 
 watch(inputValue, (newInputValue, oldInputValue) => {
-  const caret = getInputSelection(inputRef.value);
-  const { options } = props;
+  const caretEnd = getInputSelection(inputRef.value).end;
+  const { options, spaceRemovers, spacer } = props;
   if (!newInputValue.length) {
     state.helperVisible = false;
   }
 
-  state.caret = caret;
+  state.caretEnd = caretEnd;
 
-  console.log(state, options);
+  updateHelper(newInputValue, caretEnd, options);
 });
+
+// returns the matched value in the options if preceded with trigger
+const getMatch = (newInputValue, caretEnd, providedOptions) => {
+  const { trigger, matchAny, regex } = props;
+  console.log(" get match", trigger, matchAny, regex);
+  const re = new RegExp(regex);
+
+  let triggers = trigger;
+  if (!Array.isArray(triggers)) {
+    triggers = new Array(trigger);
+  }
+  triggers.sort();
+
+  const providedOptionsObject = {};
+  if (Array.isArray(providedOptions)) {
+    triggers.forEach((triggerStr: string): void => {
+      providedOptionsObject[triggerStr] = providedOptions;
+    });
+  }
+
+  const triggersMatch = arrayTriggerMatch(triggers, re);
+  let slugData: object | null = null;
+
+  for (
+    let triggersIndex = 0;
+    triggersIndex < triggersMatch.length;
+    triggersIndex++
+  ) {
+    const { triggerStr, triggerMatch, triggerLength } =
+      triggersMatch[triggersIndex];
+
+    for (let i = caretEnd - 1; i >= 0; --i) {
+      const substr = newInputValue.substring(i, caretEnd);
+      const match = substr.match(re);
+      let matchStart = -1;
+
+      if (triggerLength > 0) {
+        const triggerIdx = triggerMatch ? i : i - triggerLength + 1;
+
+        if (triggerIdx < 0) {
+          // out of input
+          break;
+        }
+
+        if (isTrigger(triggerStr, newInputValue, triggerIdx)) {
+          matchStart = triggerIdx + triggerLength;
+        }
+
+        if (!match && matchStart < 0) {
+          break;
+        }
+      } else {
+        if (match && i > 0) {
+          // find first non-matching character or begin of input
+          continue;
+        }
+        matchStart = i === 0 && match ? 0 : i + 1;
+
+        if (caretEnd - matchStart === 0) {
+          // matched slug is empty
+          break;
+        }
+      }
+
+      if (matchStart >= 0) {
+        const triggerOptions = providedOptionsObject[triggerStr];
+        if (triggerOptions == null) {
+          continue;
+        }
+
+        const matchedSlug = newInputValue.substring(matchStart, caretEnd);
+
+        const options = triggerOptions.filter((slug: any) => {
+          const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
+          return idx !== -1 && (matchAny || idx === 0);
+        });
+
+        const currTrigger = triggerStr;
+        const matchLength = matchedSlug.length;
+
+        if (slugData === null) {
+          slugData = {
+            trigger: currTrigger,
+            matchStart,
+            matchLength,
+            options
+          };
+        } else {
+          slugData = {
+            ...slugData,
+            trigger: currTrigger,
+            matchStart,
+            matchLength,
+            options
+          };
+        }
+      }
+    }
+  }
+
+  return slugData;
+};
+
+const arrayTriggerMatch = (triggers, re) => {
+  const triggersMatch = triggers.map((trigger: string) => ({
+    triggerStr: trigger,
+    triggerMatch: trigger.match(re),
+    triggerLength: trigger.length
+  }));
+
+  return triggersMatch;
+};
+
+const isTrigger = (trigger, str, i) => {
+  if (!trigger || !trigger.length) {
+    return true;
+  }
+
+  if (str.substr(i, trigger.length) === trigger) {
+    return true;
+  }
+
+  return false;
+};
+
+const resetHelper = () => {
+  state.helperVisible = false;
+  state.selection = 0;
+};
+
+const updateHelper = (newInputValue, caretEnd, options) => {
+  const slug = getMatch(newInputValue, caretEnd, options);
+  if (slug) {
+    // if match found with trigger
+    // @apple // if exists in the options[] and trigger is @
+    console.log(slug, "yes");
+  } else {
+    resetHelper();
+  }
+};
 </script>
 <template>
   <div>
