@@ -1,6 +1,10 @@
 <script lang="ts" setup>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, toRefs } from "vue";
 import getInputSelection from "get-input-selection";
+import getCaretCoordinates from "textarea-caret";
+
+const OPTION_LIST_Y_OFFSET = 10;
+const OPTION_LIST_MIN_WIDTH = 100;
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputValue = ref<string>("");
@@ -18,6 +22,13 @@ interface State {
   top: number;
   value: string | null;
   caretEnd: number;
+}
+
+interface SlugI {
+  matchLength: number;
+  matchStart: number;
+  options: Array<string>;
+  trigger: string;
 }
 
 const state: State = reactive({
@@ -53,7 +64,12 @@ let props = defineProps({
   onBlur: { type: Function },
   onChange: { type: Function },
   onKeyDown: { type: Function, default: () => ({}) },
-  onRequestOptions: { type: Function },
+  onRequestOptions: {
+    type: Function,
+    default: (str: string) => {
+      console.log(str);
+    }
+  },
   onSelect: { type: Function },
   changeOnSelect: {
     type: Function,
@@ -124,7 +140,6 @@ watch(inputValue, (newInputValue, oldInputValue) => {
 // returns the matched value in the options if preceded with trigger
 const getMatch = (newInputValue, caretEnd, providedOptions) => {
   const { trigger, matchAny, regex } = props;
-  console.log(" get match", trigger, matchAny, regex);
   const re = new RegExp(regex);
 
   let triggers = trigger;
@@ -141,7 +156,7 @@ const getMatch = (newInputValue, caretEnd, providedOptions) => {
   }
 
   const triggersMatch = arrayTriggerMatch(triggers, re);
-  let slugData: object | null = null;
+  let slugData: SlugI | null = null;
 
   for (
     let triggersIndex = 0;
@@ -220,6 +235,8 @@ const getMatch = (newInputValue, caretEnd, providedOptions) => {
     }
   }
 
+  console.log(slugData);
+
   return slugData;
 };
 
@@ -255,7 +272,39 @@ const updateHelper = (newInputValue, caretEnd, options) => {
   if (slug) {
     // if match found with trigger
     // @apple // if exists in the options[] and trigger is @
-    console.log(slug, "yes");
+
+    const caretPos = getCaretCoordinates(inputRef.value, caretEnd);
+    const rect: DOMRect = inputRef.value?.getBoundingClientRect();
+    const top: number = caretPos.top + inputRef.value?.offsetTop;
+
+    const left = Math.min(
+      caretPos.left + inputRef.value?.offsetLeft - OPTION_LIST_Y_OFFSET,
+      inputRef.value?.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
+    );
+
+    const { minChars, onRequestOptions, requestOnlyIfNoOptions } =
+      toRefs(props);
+
+    let shouldUpdateState =
+      slug.matchLength >= minChars.value &&
+      (slug.options.length > 1 ||
+        (slug.options.length === 1 &&
+          slug.options[0].length !== slug.matchLength));
+
+    if (shouldUpdateState) {
+      state.helperVisible = true;
+      state.top = top;
+      state.left = left;
+      Object.assign(state, slug);
+    } else {
+      if (!requestOnlyIfNoOptions.value || !slug.options.length) {
+        onRequestOptions.value(
+          newInputValue.substr(slug.matchStart, slug.matchLength)
+        );
+      }
+
+      resetHelper();
+    }
   } else {
     resetHelper();
   }
