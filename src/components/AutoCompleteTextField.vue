@@ -11,7 +11,7 @@ const inputValue = ref<string>("");
 
 const enableSpaceRemovers = ref(false);
 
-interface State {
+interface StateI {
   helperVisible: boolean;
   left: number;
   trigger: string | null;
@@ -31,7 +31,7 @@ interface SlugI {
   trigger: string;
 }
 
-const state: State = reactive({
+const state: StateI = reactive({
   helperVisible: false,
   left: 0,
   trigger: null,
@@ -137,18 +137,78 @@ watch(inputValue, (newInputValue, oldInputValue) => {
   updateHelper(newInputValue, caretEnd, options);
 });
 
+const resetHelper = () => {
+  state.helperVisible = false;
+  state.selection = 0;
+};
+
+const updateHelper = (
+  newInputValue: string,
+  caretEnd: number,
+  options: Array<string>
+) => {
+  const slug = getMatch(newInputValue, caretEnd, options);
+  if (slug) {
+    // if match found with trigger
+    // @apple // if exists in the options[] and trigger is @
+
+    const caretPos = getCaretCoordinates(inputRef.value, caretEnd);
+    const rect: DOMRect | undefined = inputRef.value?.getBoundingClientRect();
+    const top: number = caretPos.top + inputRef.value?.offsetTop;
+
+    if (!rect) return;
+    if (!inputRef.value) return;
+
+    const left = Math.min(
+      caretPos.left + inputRef.value?.offsetLeft - OPTION_LIST_Y_OFFSET,
+      inputRef.value?.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
+    );
+
+    const { minChars, onRequestOptions, requestOnlyIfNoOptions } =
+      toRefs(props);
+
+    let shouldUpdateState =
+      slug.matchLength >= minChars.value &&
+      (slug.options.length > 1 ||
+        (slug.options.length === 1 &&
+          slug.options[0].length !== slug.matchLength));
+
+    if (shouldUpdateState) {
+      state.helperVisible = true;
+      state.top = top;
+      state.left = left;
+      Object.assign(state, slug);
+    } else {
+      if (!requestOnlyIfNoOptions.value || !slug.options.length) {
+        onRequestOptions.value(
+          newInputValue.substr(slug.matchStart, slug.matchLength)
+        );
+      }
+
+      resetHelper();
+    }
+  } else {
+    resetHelper();
+  }
+};
+
 // returns the matched value in the options if preceded with trigger
-const getMatch = (newInputValue, caretEnd, providedOptions) => {
+const getMatch = (
+  newInputValue: string,
+  caretEnd: number,
+  providedOptions: Array<string>
+) => {
   const { trigger, matchAny, regex } = props;
   const re = new RegExp(regex);
 
-  let triggers = trigger;
+  let triggers: Array<unknown> | string = trigger;
+
   if (!Array.isArray(triggers)) {
     triggers = new Array(trigger);
   }
   triggers.sort();
 
-  const providedOptionsObject = {};
+  const providedOptionsObject: object = {};
   if (Array.isArray(providedOptions)) {
     triggers.forEach((triggerStr: string): void => {
       providedOptionsObject[triggerStr] = providedOptions;
@@ -156,6 +216,7 @@ const getMatch = (newInputValue, caretEnd, providedOptions) => {
   }
 
   const triggersMatch = arrayTriggerMatch(triggers, re);
+
   let slugData: SlugI | null = null;
 
   for (
@@ -223,13 +284,15 @@ const getMatch = (newInputValue, caretEnd, providedOptions) => {
             options
           };
         } else {
-          slugData = {
-            ...slugData,
-            trigger: currTrigger,
-            matchStart,
-            matchLength,
-            options
-          };
+          if (slugData != null) {
+            slugData = {
+              ...slugData,
+              trigger: currTrigger,
+              matchStart,
+              matchLength,
+              options
+            };
+          }
         }
       }
     }
@@ -240,7 +303,7 @@ const getMatch = (newInputValue, caretEnd, providedOptions) => {
   return slugData;
 };
 
-const arrayTriggerMatch = (triggers, re) => {
+const arrayTriggerMatch = (triggers: Array<unknown>, re: RegExp) => {
   const triggersMatch = triggers.map((trigger: string) => ({
     triggerStr: trigger,
     triggerMatch: trigger.match(re),
@@ -250,64 +313,14 @@ const arrayTriggerMatch = (triggers, re) => {
   return triggersMatch;
 };
 
-const isTrigger = (trigger, str, i) => {
+const isTrigger = (trigger: string, newInputValue: string, i: number) => {
   if (!trigger || !trigger.length) {
     return true;
   }
-
-  if (str.substr(i, trigger.length) === trigger) {
+  if (newInputValue.substr(i, trigger.length) === trigger) {
     return true;
   }
-
   return false;
-};
-
-const resetHelper = () => {
-  state.helperVisible = false;
-  state.selection = 0;
-};
-
-const updateHelper = (newInputValue, caretEnd, options) => {
-  const slug = getMatch(newInputValue, caretEnd, options);
-  if (slug) {
-    // if match found with trigger
-    // @apple // if exists in the options[] and trigger is @
-
-    const caretPos = getCaretCoordinates(inputRef.value, caretEnd);
-    const rect: DOMRect = inputRef.value?.getBoundingClientRect();
-    const top: number = caretPos.top + inputRef.value?.offsetTop;
-
-    const left = Math.min(
-      caretPos.left + inputRef.value?.offsetLeft - OPTION_LIST_Y_OFFSET,
-      inputRef.value?.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
-    );
-
-    const { minChars, onRequestOptions, requestOnlyIfNoOptions } =
-      toRefs(props);
-
-    let shouldUpdateState =
-      slug.matchLength >= minChars.value &&
-      (slug.options.length > 1 ||
-        (slug.options.length === 1 &&
-          slug.options[0].length !== slug.matchLength));
-
-    if (shouldUpdateState) {
-      state.helperVisible = true;
-      state.top = top;
-      state.left = left;
-      Object.assign(state, slug);
-    } else {
-      if (!requestOnlyIfNoOptions.value || !slug.options.length) {
-        onRequestOptions.value(
-          newInputValue.substr(slug.matchStart, slug.matchLength)
-        );
-      }
-
-      resetHelper();
-    }
-  } else {
-    resetHelper();
-  }
 };
 </script>
 <template>
