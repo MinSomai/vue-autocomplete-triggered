@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import AutoCompleteTextField from "./components/AutoCompleteTextField.vue";
+import AutoCompleteTextField from "./components/AutoCompleteTextField.vue"
 
-const options = ["apple", "ball", "foo", "bar"];
+const options = ["apple", "ball", "foo", "bar"]
 </script>
 
 <template>

@@ -1,65 +1,73 @@
 <script lang="ts" setup>
-import { ref, reactive, watch, toRefs } from "vue";
-import getInputSelection from "get-input-selection";
-import getCaretCoordinates from "textarea-caret";
+import { ref, reactive, watch, toRefs, PropType, type Prop } from "vue"
+import getInputSelection from "get-input-selection"
+import getCaretCoordinates from "textarea-caret"
 
-const OPTION_LIST_Y_OFFSET = 10;
-const OPTION_LIST_MIN_WIDTH = 100;
+const OPTION_LIST_Y_OFFSET = 10
+const OPTION_LIST_MIN_WIDTH = 100
 
-const inputRef = ref<HTMLInputElement | null>(null);
-const inputValue = ref<string>("");
+const inputRef = ref<HTMLInputElement | null>(null)
+const inputValue = ref<string>("")
 
-const enableSpaceRemovers = ref(false);
+interface OptionsI {
+  type: object | Array<string>
+}
+
+interface TriggerI {
+  type: Array<string> | string
+}
+
+const enableSpaceRemovers = ref(false)
 
 interface StateI {
-  helperVisible: boolean;
-  left: number;
-  trigger: string | null;
-  matchLength: number;
-  matchStart: number;
-  options: Array<object>;
-  selection: number;
-  top: number;
-  value: string | null;
-  caretEnd: number;
+  helperVisible: boolean
+  left: number
+  trigger: TriggerI
+  matchLength: number
+  matchStart: number
+  options: OptionsI
+  selection: number
+  top: number
+  value: string | null
+  caretEnd: number
 }
 
 interface SlugI {
-  matchLength: number;
-  matchStart: number;
-  options: Array<string>;
-  trigger: string;
+  matchLength: number
+  matchStart: number
+  options: OptionsI
+  trigger: TriggerI
 }
 
 const state: StateI = reactive({
   helperVisible: false,
   left: 0,
-  trigger: null,
+  trigger: ["@"],
   matchLength: 0,
   matchStart: 0,
   options: [],
   selection: 0,
   top: 0,
   value: null,
-  caretEnd: 0
-});
+  caretEnd: 0,
+})
 
 let props = defineProps({
   component: {
     type: String,
-    default: "textarea"
+    default: "textarea",
   },
   defaultValue: {
     type: String,
-    default: ""
+    default: "",
   },
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   maxOptions: {
     type: Number,
-    default: 6
+    default: 6,
   },
   onBlur: { type: Function },
   onChange: { type: Function },
@@ -67,157 +75,156 @@ let props = defineProps({
   onRequestOptions: {
     type: Function,
     default: (str: string) => {
-      console.log(str);
-    }
+      console.log(str)
+    },
   },
   onSelect: { type: Function },
   changeOnSelect: {
     type: Function,
-    default: (trigger: string | Array<string>, slug: string) => trigger + slug
+    default: (trigger: string | Array<string>, slug: string) => trigger + slug,
   },
   options: {
-    type: [Array, Object], // array of string or obj
-    default: () => []
+    type: Object as PropType<OptionsI>, // array of string or obj
+    default: () => ({}),
   },
   regex: {
     type: String,
-    default: "^[A-Za-z0-9\\-_]+$"
+    default: "^[A-Za-z0-9\\-_]+$",
   },
   matchAny: {
     type: Boolean,
-    default: false
+    default: false,
   },
   minChars: {
     type: Number,
-    default: 0
+    default: 0,
   },
   requestOnlyIfNoOptions: {
     type: Boolean,
-    default: true
+    default: true,
   },
   spaceRemovers: {
     type: Array,
-    default: () => [",", ".", "!", "?"]
+    default: () => [",", ".", "!", "?"],
   },
   spacer: {
     type: String,
-    default: " "
+    default: " ",
   },
   trigger: {
-    type: [String, Array],
-    default: "@"
+    type: Array as PropType<Array<string> | string>,
+    default: () => ["@"],
   },
   offsetX: {
     type: Number,
-    default: 0
+    default: 0,
   },
   offsetY: {
     type: Number,
-    default: 0
+    default: 0,
   },
   value: {
     type: String,
-    default: null
+    default: null,
   },
   passThroughEnter: {
     type: Boolean,
-    default: false
-  }
-});
+    default: false,
+  },
+})
 
 watch(inputValue, (newInputValue, oldInputValue) => {
-  const caretEnd = getInputSelection(inputRef.value).end;
-  const { options, spaceRemovers, spacer } = props;
+  const caretEnd = getInputSelection(inputRef.value).end
+  const { options, spaceRemovers, spacer } = props
   if (!newInputValue.length) {
-    state.helperVisible = false;
+    state.helperVisible = false
   }
 
-  state.caretEnd = caretEnd;
+  state.caretEnd = caretEnd
 
-  updateHelper(newInputValue, caretEnd, options);
-});
+  updateHelper(newInputValue, caretEnd, options)
+})
 
 const resetHelper = () => {
-  state.helperVisible = false;
-  state.selection = 0;
-};
+  state.helperVisible = false
+  state.selection = 0
+}
 
 const updateHelper = (
   newInputValue: string,
   caretEnd: number,
-  options: Array<string>
+  options: OptionsI
 ) => {
-  const slug = getMatch(newInputValue, caretEnd, options);
+  const slug = getMatch(newInputValue, caretEnd, options)
   if (slug) {
     // if match found with trigger
     // @apple // if exists in the options[] and trigger is @
 
-    const caretPos = getCaretCoordinates(inputRef.value, caretEnd);
-    const rect: DOMRect | undefined = inputRef.value?.getBoundingClientRect();
-    const top: number = caretPos.top + inputRef.value?.offsetTop;
+    const caretPos = getCaretCoordinates(inputRef.value, caretEnd)
+    const rect: DOMRect | undefined = inputRef.value?.getBoundingClientRect()
+    const top: number = caretPos.top + inputRef.value?.offsetTop
 
-    if (!rect) return;
-    if (!inputRef.value) return;
+    if (!rect) return
+    if (!inputRef.value) return
 
     const left = Math.min(
       caretPos.left + inputRef.value?.offsetLeft - OPTION_LIST_Y_OFFSET,
       inputRef.value?.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
-    );
+    )
 
-    const { minChars, onRequestOptions, requestOnlyIfNoOptions } =
-      toRefs(props);
+    const { minChars, onRequestOptions, requestOnlyIfNoOptions } = toRefs(props)
 
     let shouldUpdateState =
       slug.matchLength >= minChars.value &&
       (slug.options.length > 1 ||
         (slug.options.length === 1 &&
-          slug.options[0].length !== slug.matchLength));
+          slug.options[0].length !== slug.matchLength))
 
     if (shouldUpdateState) {
-      state.helperVisible = true;
-      state.top = top;
-      state.left = left;
-      Object.assign(state, slug);
+      state.helperVisible = true
+      state.top = top
+      state.left = left
+      Object.assign(state, slug)
     } else {
       if (!requestOnlyIfNoOptions.value || !slug.options.length) {
         onRequestOptions.value(
           newInputValue.substr(slug.matchStart, slug.matchLength)
-        );
+        )
       }
 
-      resetHelper();
+      resetHelper()
     }
   } else {
-    resetHelper();
+    resetHelper()
   }
-};
+}
 
 // returns the matched value in the options if preceded with trigger
 const getMatch = (
   newInputValue: string,
   caretEnd: number,
-  providedOptions: Array<string>
+  providedOptions: OptionsI
 ) => {
-  const { trigger, matchAny, regex } = props;
-  const re = new RegExp(regex);
+  const { trigger, matchAny, regex } = props
+  const re = new RegExp(regex)
 
-  let triggers: Array<unknown> | string = trigger;
+  let triggers = trigger
 
   if (!Array.isArray(triggers)) {
-    triggers = new Array(trigger);
+    triggers = new Array(trigger)
   }
-  triggers.sort();
+  triggers.sort()
 
-  const providedOptionsObject: object = {};
+  const providedOptionsObject: object = {}
   if (Array.isArray(providedOptions)) {
     triggers.forEach((triggerStr: string): void => {
-      providedOptionsObject[triggerStr] = providedOptions;
-    });
+      providedOptionsObject[triggerStr] = providedOptions
+    })
   }
 
-  const triggersMatch = arrayTriggerMatch(triggers, re);
+  const triggersMatch = arrayTriggerMatch(triggers, re)
 
-  let slugData: SlugI | null = null;
+  let slugData: SlugI | null = null
 
   for (
     let triggersIndex = 0;
@@ -225,64 +232,64 @@ const getMatch = (
     triggersIndex++
   ) {
     const { triggerStr, triggerMatch, triggerLength } =
-      triggersMatch[triggersIndex];
+      triggersMatch[triggersIndex]
 
     for (let i = caretEnd - 1; i >= 0; --i) {
-      const substr = newInputValue.substring(i, caretEnd);
-      const match = substr.match(re);
-      let matchStart = -1;
+      const substr = newInputValue.substring(i, caretEnd)
+      const match = substr.match(re)
+      let matchStart = -1
 
       if (triggerLength > 0) {
-        const triggerIdx = triggerMatch ? i : i - triggerLength + 1;
+        const triggerIdx = triggerMatch ? i : i - triggerLength + 1
 
         if (triggerIdx < 0) {
           // out of input
-          break;
+          break
         }
 
         if (isTrigger(triggerStr, newInputValue, triggerIdx)) {
-          matchStart = triggerIdx + triggerLength;
+          matchStart = triggerIdx + triggerLength
         }
 
         if (!match && matchStart < 0) {
-          break;
+          break
         }
       } else {
         if (match && i > 0) {
           // find first non-matching character or begin of input
-          continue;
+          continue
         }
-        matchStart = i === 0 && match ? 0 : i + 1;
+        matchStart = i === 0 && match ? 0 : i + 1
 
         if (caretEnd - matchStart === 0) {
           // matched slug is empty
-          break;
+          break
         }
       }
 
       if (matchStart >= 0) {
-        const triggerOptions = providedOptionsObject[triggerStr];
+        const triggerOptions = providedOptionsObject[triggerStr]
         if (triggerOptions == null) {
-          continue;
+          continue
         }
 
-        const matchedSlug = newInputValue.substring(matchStart, caretEnd);
+        const matchedSlug = newInputValue.substring(matchStart, caretEnd)
 
         const options = triggerOptions.filter((slug: any) => {
-          const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
-          return idx !== -1 && (matchAny || idx === 0);
-        });
+          const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase())
+          return idx !== -1 && (matchAny || idx === 0)
+        })
 
-        const currTrigger = triggerStr;
-        const matchLength = matchedSlug.length;
+        const currTrigger = triggerStr
+        const matchLength = matchedSlug.length
 
         if (slugData === null) {
           slugData = {
             trigger: currTrigger,
             matchStart,
             matchLength,
-            options
-          };
+            options,
+          }
         } else {
           if (slugData != null) {
             slugData = {
@@ -290,38 +297,38 @@ const getMatch = (
               trigger: currTrigger,
               matchStart,
               matchLength,
-              options
-            };
+              options,
+            }
           }
         }
       }
     }
   }
 
-  console.log(slugData);
+  console.log(slugData)
 
-  return slugData;
-};
+  return slugData
+}
 
-const arrayTriggerMatch = (triggers: Array<unknown>, re: RegExp) => {
+const arrayTriggerMatch = (triggers: Array<string> | string, re: RegExp) => {
   const triggersMatch = triggers.map((trigger: string) => ({
     triggerStr: trigger,
     triggerMatch: trigger.match(re),
-    triggerLength: trigger.length
-  }));
+    triggerLength: trigger.length,
+  }))
 
-  return triggersMatch;
-};
+  return triggersMatch
+}
 
 const isTrigger = (trigger: string, newInputValue: string, i: number) => {
   if (!trigger || !trigger.length) {
-    return true;
+    return true
   }
   if (newInputValue.substr(i, trigger.length) === trigger) {
-    return true;
+    return true
   }
-  return false;
-};
+  return false
+}
 </script>
 <template>
   <div>
