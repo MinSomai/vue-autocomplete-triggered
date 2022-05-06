@@ -3,14 +3,39 @@ import { ref, reactive, watch, toRefs } from "vue";
 import getInputSelection from "get-input-selection";
 import getCaretCoordinates from "textarea-caret";
 
+export type OptionsI = { [key: string]: string[] } | string[];
+export type TriggerI = string | string[];
+
+export interface PropsI {
+  component?: string;
+  defaultValue?: string;
+  disabled?: boolean;
+  maxOptions?: number;
+  onBlur?: () => void;
+  onChange?: () => void;
+  onKeyDown?: () => void;
+  onSelect?: () => void;
+  onRequestOptions?: (newInputValue: string) => void;
+  changeOnSelect?: (trigger: string, slug: string) => string;
+  options?: OptionsI;
+  trigger?: TriggerI;
+  regex?: string;
+  matchAny?: boolean;
+  minChars?: number;
+  requestOnlyIfNoOptions?: boolean;
+  spaceRemovers?: string[];
+  spacer?: string;
+  offsetX?: number;
+  offsetY?: number;
+  value?: string | null;
+  passThroughEnter?: boolean;
+}
+
 const OPTION_LIST_Y_OFFSET = 10;
 const OPTION_LIST_MIN_WIDTH = 100;
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputValue = ref<string>("");
-
-type OptionsI = { [key: string]: string[] } | string[];
-type TriggerI = string | string[];
 
 const enableSpaceRemovers = ref(false);
 
@@ -41,31 +66,6 @@ interface MatchedOptionI {
   trigger: TriggerI;
 }
 
-interface PropsI {
-  component?: string;
-  defaultValue?: string;
-  disabled?: boolean;
-  maxOptions?: number;
-  onBlur?: () => void;
-  onChange?: () => void;
-  onKeyDown?: () => void;
-  onSelect?: () => void;
-  onRequestOptions?: (newInputValue: string) => void;
-  changeOnSelect?: (trigger: string, slug: string) => string;
-  options?: OptionsI;
-  trigger?: TriggerI;
-  regex?: string;
-  matchAny?: boolean;
-  minChars?: number;
-  requestOnlyIfNoOptions?: boolean;
-  spaceRemovers?: string[];
-  spacer?: string;
-  offsetX?: number;
-  offsetY?: number;
-  value?: string | null;
-  passThroughEnter?: boolean;
-}
-
 const state: StateI = reactive({
   helperVisible: false,
   left: 0,
@@ -91,10 +91,10 @@ let props = withDefaults(defineProps<PropsI>(), {
   onKeyDown: () => {},
   onSelect: () => {},
   /* eslint-enable @typescript-eslint/no-empty-function */
-  onRequestOptions: (newInputValue) => {
+  onRequestOptions: (newInputValue: string) => {
     return newInputValue;
   },
-  changeOnSelect: (trigger, slug) => {
+  changeOnSelect: (trigger: string, slug: string) => {
     return trigger + slug;
   },
   options: () => ["apple", "ball"],
