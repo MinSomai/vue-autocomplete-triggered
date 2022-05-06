@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import AutoCompleteTextField from "./components/AutoCompleteTextField.vue"
+import AutoCompleteTextField from "./components/AutoCompleteTextField.vue";
 
-const options = ["apple", "ball", "foo", "bar"]
+const triggerSingle = "@";
+const optionsSingle = ["apple", "ball", "foo", "bar"];
+
+const triggerMultiple = ["@", "@@"];
+const optionsMultiple = {
+  "@": ["apple1", "ball1", "foo1", "bar1"],
+  "@@": ["apple2", "ball2", "foo2", "bar2"],
+};
 </script>
 
 <template>
   <main>
-    <AutoCompleteTextField :options="options" />
+    <AutoCompleteTextField :trigger="triggerSingle" :options="optionsSingle" />
+    <AutoCompleteTextField
+      :trigger="triggerMultiple"
+      :options="optionsMultiple"
+    />
   </main>
 </template>
 
