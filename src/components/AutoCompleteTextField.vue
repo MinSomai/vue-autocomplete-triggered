@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, reactive, watch, toRefs } from "vue";
+import { ref, reactive, watch, toRefs, nextTick } from "vue";
 import getInputSelection, { setCaretPosition } from "get-input-selection";
 import getCaretCoordinates from "textarea-caret";
 
-import AutoCompleteOptionsList from "./AutoCompleteOptionsList.vue";
+import OptionsList from "./OptionsList.vue";
 
 export type OptionsI = { [key: string]: string[] } | string[];
 export type TriggerI = string | string[];
@@ -15,8 +15,8 @@ export interface PropTypesI {
   maxOptions?: number;
   onBlur?: () => void;
   onChange?: (newInputValue: string) => void;
-  onKeyDown?: () => void;
-  onSelect?: () => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
+  onSelect?: (inputValue: string) => void;
   onRequestOptions?: (newInputValue: string) => void;
   changeOnSelect?: (trigger: string, slug: string) => string;
   options?: OptionsI;
@@ -33,13 +33,21 @@ export interface PropTypesI {
   passThroughEnter?: boolean;
 }
 
+const KEY_UP = 38;
+const KEY_DOWN = 40;
+const KEY_RETURN = 13;
+const KEY_ENTER = 14;
+const KEY_ESCAPE = 27;
+const KEY_TAB = 9;
 const OPTION_LIST_Y_OFFSET = 10;
 const OPTION_LIST_MIN_WIDTH = 100;
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputValue = ref<string>("");
 
-const enableSpaceRemovers = ref(false);
+const enableSpaceRemovers = ref<boolean>(false);
+// preserve the inputValue length when it was selected
+const enableSpaceRemoversPrevLength = ref<number>(0);
 
 interface TriggerMatchesI {
   triggerLength: number;
@@ -110,8 +118,59 @@ let props = withDefaults(defineProps<PropTypesI>(), {
   passThroughEnter: false,
 });
 
+// '@wonderjenny ,|' -> '@wonderjenny, |'
+const removeSpacer = (
+  newInputValue: string,
+  oldInputValue: string,
+  caretEnd: number
+) => {
+  const { onChange, options, spaceRemovers, spacer } = props;
+  if (
+    !(
+      enableSpaceRemovers.value &&
+      spaceRemovers.length &&
+      newInputValue.length > 2 &&
+      spacer.length
+    )
+  )
+    return;
+
+  for (
+    let i = 0;
+    i < Math.max(oldInputValue.length, newInputValue.length);
+    ++i
+  ) {
+    if (oldInputValue[i] !== newInputValue[i]) {
+      if (
+        i >= 2 &&
+        newInputValue[i - 1] === spacer &&
+        spaceRemovers.indexOf(newInputValue[i - 2]) === -1 &&
+        spaceRemovers.indexOf(newInputValue[i]) !== -1 &&
+        getMatch(newInputValue.substring(0, i - 2), caretEnd - 3, options)
+      ) {
+        const newValue = `${newInputValue.slice(0, i - 1)}${newInputValue.slice(
+          i,
+          i + 1
+        )}${newInputValue.slice(i - 1, i)}${newInputValue.slice(i + 1)}`;
+
+        inputValue.value = newValue;
+
+        updateCaretPosition(i + 1);
+        enableSpaceRemovers.value = false;
+        return onChange(newValue);
+      }
+      break;
+    }
+  }
+
+  if (newInputValue.length > enableSpaceRemoversPrevLength.value) {
+    // waits for one extra character
+    enableSpaceRemovers.value = false;
+  }
+};
+
 watch(inputValue, (newInputValue, oldInputValue) => {
-  const { onChange, options, spaceRemovers, spacer, value } = props;
+  const { onChange, options } = props;
 
   const caretEnd = getInputSelection(inputRef.value).end;
 
@@ -125,62 +184,20 @@ watch(inputValue, (newInputValue, oldInputValue) => {
     return onChange(newInputValue);
   }
 
-  // '@wonderjenny ,|' -> '@wonderjenny, |'
-  // applicable during options selection
-  if (
-    enableSpaceRemovers.value &&
-    spaceRemovers.length &&
-    newInputValue.length > 2 &&
-    spacer.length
-  ) {
-    console.log("hey");
-    for (
-      let i = 0;
-      i < Math.max(oldInputValue.length, newInputValue.length);
-      ++i
-    ) {
-      if (oldInputValue[i] !== newInputValue[i]) {
-        if (
-          i >= 2 &&
-          newInputValue[i - 1] === spacer &&
-          spaceRemovers.indexOf(newInputValue[i - 2]) === -1 &&
-          spaceRemovers.indexOf(newInputValue[i]) !== -1 &&
-          getMatch(newInputValue.substring(0, i - 2), caretEnd - 3, options)
-        ) {
-          const newValue = `${newInputValue.slice(
-            0,
-            i - 1
-          )}${newInputValue.slice(i, i + 1)}${newInputValue.slice(
-            i - 1,
-            i
-          )}${newInputValue.slice(i + 1)}`;
-
-          updateCaretPosition(i + 1);
-          if (inputRef.value) inputRef.value.current = newValue;
-          return onChange(newValue);
-        }
-
-        break;
-      }
-    }
-
-    enableSpaceRemovers.value = false;
-  }
+  // applicable after options selection
+  removeSpacer(newInputValue, oldInputValue, caretEnd);
 
   updateHelper(newInputValue, caretEnd, options);
+
+  if (!inputValue.value) {
+    inputValue.value = newInputValue;
+  }
+
+  return onChange(newInputValue);
 });
 
-const updateCaretPosition = (caretEnd: number) => {
-  state.caretEnd = caretEnd;
-  watch(
-    () => state.caretEnd,
-    () => {
-      setCaretPosition(inputRef.value?.current, caretEnd);
-    }
-  );
-};
-
-const resetHelper = () => {
+const resetHelper = async () => {
+  await nextTick();
   state.helperVisible = false;
   state.selection = 0;
 };
@@ -191,15 +208,14 @@ const updateHelper = (
   options: OptionsI
 ): void => {
   const slug = getMatch(newInputValue, caretEnd, options);
-  console.log(slug);
 
   if (slug == null) {
     resetHelper();
     return;
   }
   // if match found with trigger
-  // @apple // if exists in the options[] and trigger is @
-
+  // i.e if input is @apple
+  // if it exists in the options[] list and the trigger is @
   const caretPos = getCaretCoordinates(inputRef.value, caretEnd);
   const rect: DOMRect | undefined = inputRef.value?.getBoundingClientRect();
   const top: number = caretPos.top + inputRef.value?.offsetTop;
@@ -324,7 +340,7 @@ const getMatch = (
 
         const matchedSlug = newInputValue.substring(matchStart, caretEnd);
 
-        const options = triggerOptions.filter((slug: any) => {
+        const options = triggerOptions.filter((slug: string) => {
           const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
           return idx !== -1 && (matchAny || idx === 0);
         });
@@ -370,9 +386,83 @@ const isTrigger = (trigger: string, newInputValue: string, i: number) => {
   }
   return false;
 };
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const { helperVisible, options, selection } = state;
+  const { onKeyDown, passThroughEnter } = props;
+
+  if (helperVisible) {
+    switch (event.keyCode) {
+      case KEY_ESCAPE:
+        event.preventDefault();
+        resetHelper();
+        break;
+      case KEY_UP:
+        event.preventDefault();
+        if (Array.isArray(options)) {
+          state.selection =
+            ((options.length as number) + selection - 1) % options.length;
+        }
+        break;
+      case KEY_DOWN:
+        event.preventDefault();
+        if (Array.isArray(state.options)) {
+          state.selection = (selection + 1) % state.options.length;
+        }
+        break;
+      case KEY_ENTER:
+      case KEY_RETURN:
+        if (!passThroughEnter) {
+          event.preventDefault();
+        }
+        handleSelection(selection);
+        break;
+      case KEY_TAB:
+        handleSelection(selection);
+        break;
+      default:
+        onKeyDown(event);
+        break;
+    }
+  } else {
+    onKeyDown(event);
+  }
+};
+
+const handleSelection = (idx: number) => {
+  const { spacer, onSelect, changeOnSelect } = props;
+  const { matchStart, matchLength, options, trigger } = state;
+
+  if (!Array.isArray(options)) return;
+  if (!(typeof trigger == "string")) return;
+
+  const slug = options[idx];
+  const part1 =
+    trigger.length === 0
+      ? ""
+      : inputValue.value.substring(0, matchStart - trigger.length);
+
+  const part2 = inputValue.value.substring(matchStart + matchLength);
+
+  const changedStr = changeOnSelect(trigger, slug);
+
+  inputValue.value = `${part1}${changedStr}${spacer}${part2}`;
+  onSelect(inputValue.value);
+  resetHelper();
+
+  updateCaretPosition(part1.length + changedStr.length + 1);
+  enableSpaceRemovers.value = true;
+  enableSpaceRemoversPrevLength.value = inputValue.value.length; // currently selected input length
+};
+
+const updateCaretPosition = (caretEnd: number) => {
+  state.caretEnd = caretEnd;
+  setCaretPosition(inputRef.value, caretEnd);
+};
 </script>
 <template>
   <div class="vue-autocomplete-triggered">
+    {{ state }}
     <br />
     <textarea
       name="my-textarea"
@@ -381,9 +471,10 @@ const isTrigger = (trigger: string, newInputValue: string, i: number) => {
       rows="10"
       ref="inputRef"
       v-model="inputValue"
+      @keydown="handleKeyDown"
     ></textarea>
 
-    <AutoCompleteOptionsList
+    <OptionsList
       :helper-visible="state.helperVisible"
       :left="state.left"
       :top="state.top"
@@ -395,6 +486,8 @@ const isTrigger = (trigger: string, newInputValue: string, i: number) => {
       :offset-x="offsetX"
       :offset-y="offsetY"
       v-model="inputValue"
+      @handle-selection="handleSelection"
+      @set-selection="(hoveredIndex) => (state.selection = hoveredIndex)"
     />
   </div>
 </template>

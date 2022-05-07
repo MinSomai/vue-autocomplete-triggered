@@ -42,7 +42,7 @@ let props = defineProps({
     type: Number,
     default: 0,
   },
-  value: {
+  modelValue: {
     type: String,
     default: null,
   },
@@ -50,16 +50,17 @@ let props = defineProps({
 
 defineEmits(["handle-selection", "set-selection"]);
 
-const { maxOptions, options, matchStart, matchLength, value } = toRefs(props);
+const { maxOptions, options, matchStart, matchLength, modelValue } =
+  toRefs(props);
 
 const optionsNumber =
   maxOptions.value === 0 ? options.value.length : maxOptions.value;
 
 const highlightStart = (val: string): number => {
-  if (!value.value) return 0;
+  if (!modelValue.value) return 0;
   return val
     .toLowerCase()
-    .indexOf(value.value.substr(matchStart.value, matchLength.value));
+    .indexOf(modelValue.value.substr(matchStart.value, matchLength.value));
 };
 
 const computedItems = computed((): string[] => {
@@ -80,7 +81,7 @@ const computedItems = computed((): string[] => {
         :key="index"
         :class="{ active: index == selection }"
         @click="$emit('handle-selection', index)"
-        @mouseEnter="$emit('set-selection', index)"
+        @mouseenter="$emit('set-selection', index)"
       >
         {{ item.slice(0, highlightStart(item)) }}
         <strong> {{ item.substr(highlightStart(item), matchLength) }} </strong>
