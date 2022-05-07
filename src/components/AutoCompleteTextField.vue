@@ -1,18 +1,20 @@
 <script lang="ts" setup>
 import { ref, reactive, watch, toRefs } from "vue";
-import getInputSelection from "get-input-selection";
+import getInputSelection, { setCaretPosition } from "get-input-selection";
 import getCaretCoordinates from "textarea-caret";
+
+import AutoCompleteOptionsList from "./AutoCompleteOptionsList.vue";
 
 export type OptionsI = { [key: string]: string[] } | string[];
 export type TriggerI = string | string[];
 
-export interface PropsI {
+export interface PropTypesI {
   component?: string;
   defaultValue?: string;
   disabled?: boolean;
   maxOptions?: number;
   onBlur?: () => void;
-  onChange?: () => void;
+  onChange?: (newInputValue: string) => void;
   onKeyDown?: () => void;
   onSelect?: () => void;
   onRequestOptions?: (newInputValue: string) => void;
@@ -54,7 +56,6 @@ interface StateI {
   options: OptionsI;
   selection: number;
   top: number;
-  value?: string | null;
   caretEnd: number;
 }
 
@@ -75,12 +76,11 @@ const state: StateI = reactive({
   options: [],
   selection: 0,
   top: 0,
-  value: null,
   caretEnd: 0,
 });
 
 // props default value
-let props = withDefaults(defineProps<PropsI>(), {
+let props = withDefaults(defineProps<PropTypesI>(), {
   component: "textarea",
   defaultValue: "",
   disabled: false,
@@ -106,22 +106,79 @@ let props = withDefaults(defineProps<PropsI>(), {
   spaceRemovers: () => [",", ".", "!", "?"],
   spacer: " ",
   offsetX: 0,
-  offsetY: 0,
-  value: null,
+  offsetY: 20,
   passThroughEnter: false,
 });
 
 watch(inputValue, (newInputValue, oldInputValue) => {
+  const { onChange, options, spaceRemovers, spacer, value } = props;
+
   const caretEnd = getInputSelection(inputRef.value).end;
-  const { options, spaceRemovers, spacer } = props;
+
   if (!newInputValue.length) {
     state.helperVisible = false;
   }
 
   state.caretEnd = caretEnd;
 
+  if (!newInputValue.length || !caretEnd) {
+    return onChange(newInputValue);
+  }
+
+  // '@wonderjenny ,|' -> '@wonderjenny, |'
+  // applicable during options selection
+  if (
+    enableSpaceRemovers.value &&
+    spaceRemovers.length &&
+    newInputValue.length > 2 &&
+    spacer.length
+  ) {
+    console.log("hey");
+    for (
+      let i = 0;
+      i < Math.max(oldInputValue.length, newInputValue.length);
+      ++i
+    ) {
+      if (oldInputValue[i] !== newInputValue[i]) {
+        if (
+          i >= 2 &&
+          newInputValue[i - 1] === spacer &&
+          spaceRemovers.indexOf(newInputValue[i - 2]) === -1 &&
+          spaceRemovers.indexOf(newInputValue[i]) !== -1 &&
+          getMatch(newInputValue.substring(0, i - 2), caretEnd - 3, options)
+        ) {
+          const newValue = `${newInputValue.slice(
+            0,
+            i - 1
+          )}${newInputValue.slice(i, i + 1)}${newInputValue.slice(
+            i - 1,
+            i
+          )}${newInputValue.slice(i + 1)}`;
+
+          updateCaretPosition(i + 1);
+          if (inputRef.value) inputRef.value.current = newValue;
+          return onChange(newValue);
+        }
+
+        break;
+      }
+    }
+
+    enableSpaceRemovers.value = false;
+  }
+
   updateHelper(newInputValue, caretEnd, options);
 });
+
+const updateCaretPosition = (caretEnd: number) => {
+  state.caretEnd = caretEnd;
+  watch(
+    () => state.caretEnd,
+    () => {
+      setCaretPosition(inputRef.value?.current, caretEnd);
+    }
+  );
+};
 
 const resetHelper = () => {
   state.helperVisible = false;
@@ -301,8 +358,6 @@ const arrayTriggerMatch = (
     })
   );
 
-  console.log("mm: ", triggersMatch);
-
   return triggersMatch;
 };
 
@@ -318,7 +373,6 @@ const isTrigger = (trigger: string, newInputValue: string, i: number) => {
 </script>
 <template>
   <div class="vue-autocomplete-triggered">
-    {{ options }}
     <br />
     <textarea
       name="my-textarea"
@@ -328,6 +382,20 @@ const isTrigger = (trigger: string, newInputValue: string, i: number) => {
       ref="inputRef"
       v-model="inputValue"
     ></textarea>
+
+    <AutoCompleteOptionsList
+      :helper-visible="state.helperVisible"
+      :left="state.left"
+      :top="state.top"
+      :match-start="state.matchStart"
+      :match-length="state.matchLength"
+      :max-options="maxOptions"
+      :options="state.options"
+      :selection="state.selection"
+      :offset-x="offsetX"
+      :offset-y="offsetY"
+      v-model="inputValue"
+    />
   </div>
 </template>
 <style scoped>
