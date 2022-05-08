@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 
 import { mount } from "@vue/test-utils";
-import HelloWorld from "../HelloWorld.vue";
+import AutoCompleteTextField from "../AutoCompleteTextField.vue";
 
-describe("HelloWorld", () => {
+describe("AutoCompleteTextField", () => {
   it("renders properly", () => {
-    const wrapper = mount(HelloWorld, { props: { msg: "Hello Vitest" } });
+    const wrapper = mount(AutoCompleteTextField, { props: { trigger: "#" } });
+    console.log(wrapper);
     expect(wrapper.text()).toContain("Hello Vitest");
   });
 });

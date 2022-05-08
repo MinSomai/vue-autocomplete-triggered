@@ -2,6 +2,7 @@
 import { computed, toRefs } from "vue";
 import type { PropType } from "vue";
 
+// todo if greter selecton than options length
 let props = defineProps({
   helperVisible: {
     type: Boolean,
@@ -17,22 +18,23 @@ let props = defineProps({
   },
   matchStart: {
     type: Number,
+    default: 0,
   },
   matchLength: {
     type: Number,
+    default: 0,
   },
   maxOptions: {
     type: Number,
     default: 6,
   },
   options: {
-    type: [Array, Object] as PropType<
-      Array<string> | { [key: string]: string[] }
-    >, // array of string or obj
+    type: Array as PropType<Array<string>>, // array of string or obj
     default: () => [],
   },
   selection: {
     type: Number,
+    default: 0,
   },
   offsetX: {
     type: Number,
