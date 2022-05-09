@@ -477,16 +477,15 @@ const updateCaretPosition = (caretEnd: number) => {
 };
 </script>
 <template>
-  <slot :value="inputValue" @keydown="handleKeyDown">
-    <textarea
-      name="my-textarea"
-      id="myTextarea"
-      rows="2"
-      ref="inputRef"
-      v-model="inputValue"
-      @keydown="handleKeyDown"
-    ></textarea>
-  </slot>
+  <textarea
+    name="my-textarea"
+    id="myTextarea"
+    rows="2"
+    ref="inputRef"
+    v-model="inputValue"
+    @keydown="handleKeyDown"
+    v-bind="$attrs"
+  ></textarea>
 
   <OptionsList
     :helper-visible="state.helperVisible"

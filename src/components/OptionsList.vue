@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import { computed, toRefs } from "vue";
+import { computed, toRefs, watch } from "vue";
 import type { PropType } from "vue";
 
-// todo if greter selecton than options length
 let props = defineProps({
   helperVisible: {
     type: Boolean,
@@ -50,10 +49,17 @@ let props = defineProps({
   },
 });
 
-defineEmits(["handle-selection", "set-selection"]);
+const emit = defineEmits(["handle-selection", "set-selection"]);
 
-const { maxOptions, options, matchStart, matchLength, modelValue } =
+const { maxOptions, selection, options, matchStart, matchLength, modelValue } =
   toRefs(props);
+
+// edge case where 'undefined' returned
+watch(selection, (newSelectionValue) => {
+  if (newSelectionValue >= options.value.length) {
+    emit("set-selection", 0);
+  }
+});
 
 const optionsNumber =
   maxOptions.value === 0 ? options.value.length : maxOptions.value;
