@@ -1,3 +1,4 @@
+const path = require("path");
 import { fileURLToPath, URL } from "url";
 
 import { defineConfig } from "vite";
@@ -9,6 +10,25 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, "src/main.ts"),
+      name: "VueAutoCompleteTriggered",
+      fileName: (format) => `vue-autocomplete-triggered.${format}.js`,
+    },
+    rollupOptions: {
+      // make sure to externalize deps that shouldn't be bundled
+      // into your library
+      external: ["vue"],
+      output: {
+        // Provide global variables to use in the UMD build
+        // for externalized deps
+        globals: {
+          vue: "Vue",
+        },
+      },
     },
   },
 });

@@ -505,8 +505,3 @@ const updateCaretPosition = (caretEnd: number) => {
     @set-selection="(hoveredIndex) => (state.selection = hoveredIndex)"
   />
 </template>
-<style scoped>
-.vue-autocomplete-triggered {
-  margin-bottom: 10px;
-}
-</style>
