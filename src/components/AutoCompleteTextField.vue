@@ -8,7 +8,8 @@ import type { OptionsI, TriggerI } from "@/interface";
 import OptionsList from "./OptionsList.vue";
 
 // can't import interface, limitation AFAIK
-// refer: https://github.com/vuejs/core/issues/4294
+// refer:
+// https://github.com/vuejs/core/issues/4294
 export interface PropTypesI {
   component?: string;
   defaultValue?: string;
@@ -367,7 +368,7 @@ const removeSpacer = (
       spacer.length
     )
   )
-    return;
+    return; // don't continue
 
   for (
     let i = 0;
@@ -407,41 +408,42 @@ const handleKeyDown = (event: KeyboardEvent) => {
   const { helperVisible, options, selection } = state;
   const { onKeyDown, passThroughEnter } = props;
 
-  if (helperVisible) {
-    switch (event.keyCode) {
-      case KEY_ESCAPE:
-        event.preventDefault();
-        resetHelper();
-        break;
-      case KEY_UP:
-        event.preventDefault();
-        if (Array.isArray(options)) {
-          state.selection =
-            ((options.length as number) + selection - 1) % options.length;
-        }
-        break;
-      case KEY_DOWN:
-        event.preventDefault();
-        if (Array.isArray(state.options)) {
-          state.selection = (selection + 1) % state.options.length;
-        }
-        break;
-      case KEY_ENTER:
-      case KEY_RETURN:
-        if (!passThroughEnter) {
-          event.preventDefault();
-        }
-        handleSelection(selection);
-        break;
-      case KEY_TAB:
-        handleSelection(selection);
-        break;
-      default:
-        onKeyDown(event);
-        break;
-    }
-  } else {
+  if (helperVisible == false) {
     onKeyDown(event);
+    return; // don't continue
+  }
+
+  switch (event.keyCode) {
+    case KEY_ESCAPE:
+      event.preventDefault();
+      resetHelper();
+      break;
+    case KEY_UP:
+      event.preventDefault();
+      if (Array.isArray(options)) {
+        state.selection =
+          ((options.length as number) + selection - 1) % options.length;
+      }
+      break;
+    case KEY_DOWN:
+      event.preventDefault();
+      if (Array.isArray(state.options)) {
+        state.selection = (selection + 1) % state.options.length;
+      }
+      break;
+    case KEY_ENTER:
+    case KEY_RETURN:
+      if (!passThroughEnter) {
+        event.preventDefault();
+      }
+      handleSelection(selection);
+      break;
+    case KEY_TAB:
+      handleSelection(selection);
+      break;
+    default:
+      onKeyDown(event);
+      break;
   }
 };
 
