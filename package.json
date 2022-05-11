@@ -1,6 +1,6 @@
 {
   "name": "vue-autocomplete-triggered",
-  "version": "0.1.15",
+  "version": "0.1.17",
   "author": "MinSomai",
   "description": "Autocomplete input fields with triggers.",
   "scripts": {

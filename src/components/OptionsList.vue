@@ -103,24 +103,28 @@ const computedItems = computed((): string[] => {
   background-color: #fff;
   border: 1px solid rgba(0, 0, 0, 0.15);
   bottom: auto;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.175);
   display: block;
   font-size: 14px;
   list-style: none;
-  padding: 1px;
   position: absolute;
+  padding: 0px;
+  margin-left: 3px;
   text-align: left;
   z-index: 20000;
+  border-radius: 3px;
+  overflow: hidden;
 }
 
 .vue-autocomplete-input > li {
   cursor: pointer;
   padding: 10px;
   min-width: 100px;
+  transition: all 0.2s ease-in;
 }
 
 .vue-autocomplete-input > li.active {
-  background-color: #337ab7;
-  color: #fff;
+  background-color: #e0f7ff;
+  color: #168bc5;
 }
 </style>
