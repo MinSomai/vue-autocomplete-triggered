@@ -97,7 +97,7 @@ const computedItems = computed((): string[] => {
   return [];
 });
 </script>
-<style scoped>
+<style>
 .vue-autocomplete-input {
   background-clip: padding-box;
   background-color: #fff;

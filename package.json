@@ -1,12 +1,11 @@
 {
   "name": "vue-autocomplete-triggered",
-  "version": "0.1.11",
+  "version": "0.1.15",
   "author": "MinSomai",
   "description": "Autocomplete input fields with triggers.",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "build:vite": "vite build",
     "test:unit": "vitest --environment jsdom",
     "typecheck": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
@@ -14,10 +13,11 @@
   "main": "./dist/vue-autocomplete-triggered.umd.js",
   "module": "./dist/vue-autocomplete-triggered.es.js",
   "exports": {
-    ".": {
-      "import": "./dist/vue-autocomplete-triggered.es.js",
-      "require": "./dist/vue-autocomplete-triggered.umd.js"
-    }
+    ".": "./dist/vue-autocomplete-triggered.es.js",
+    "./styles.css": "./dist/style.css"
+  },
+  "browser": {
+    "./styles.css": "./dist/style.css"
   },
   "files": [
     "dist",
