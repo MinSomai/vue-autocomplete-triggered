@@ -1,7 +1,7 @@
 {
   "name": "vue-autocomplete-triggered",
-  "version": "0.1.17",
-  "author": "MinSomai",
+  "version": "0.1.18",
+  "author": "Min Somai",
   "description": "Autocomplete input fields with triggers.",
   "scripts": {
     "dev": "vite",
@@ -25,11 +25,17 @@
     "README.md"
   ],
   "keywords": [
+    "vue3 input dropdown",
+    "vue textarea dropdown",
     "vue-autocomplete",
     "vue-triggered-input",
     "vue-input-suggestion",
     "autocomplete"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minsomai/vue-autocomplete-triggered.git"
+  },
   "license": "MIT",
   "dependencies": {
     "get-input-selection": "^1.1.4",
@@ -57,5 +63,9 @@
   },
   "peerDependencies": {
     "vue": "^3.2.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/MinSomai/vue-autocomplete-triggered/issues"
+  },
+  "homepage": "https://github.com/MinSomai/vue-autocomplete-triggered#readme"
 }
