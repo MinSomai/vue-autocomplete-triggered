@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import AutoCompleteTextField from "../src/components/AutoCompleteTextField.vue";
+import AutoCompleteTextField from "@/components/AutoCompleteTextField.vue";
 
 const triggerMultiple = ["@", "@@", "#"];
 const optionsMultiple = {

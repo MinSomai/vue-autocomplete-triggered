@@ -1,11 +1,12 @@
 {
   "name": "vue-autocomplete-triggered",
-  "version": "0.1.1",
+  "version": "0.1.11",
   "author": "MinSomai",
   "description": "Autocomplete input fields with triggers.",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
+    "build:vite": "vite build",
     "test:unit": "vitest --environment jsdom",
     "typecheck": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"

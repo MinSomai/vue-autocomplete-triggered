@@ -1,7 +1,4 @@
-import AutoCompleteTextField from "./components/AutoCompleteTextField.vue";
+import { createApp } from "vue";
+import App from "./App.vue";
 
-export default install = (app) => {
-  app.component("auto-complete-text-field", AutoCompleteTextField);
-};
-
-export { AutoCompleteTextField };
+createApp(App).mount("#app");

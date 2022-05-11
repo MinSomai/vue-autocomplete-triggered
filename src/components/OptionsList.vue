@@ -1,3 +1,22 @@
+<template>
+  <ul
+    class="vue-autocomplete-input"
+    :style="`left: ${left + offsetX}; top: ${top + offsetY}px`"
+    v-if="helperVisible && options.length > 0"
+  >
+    <li
+      v-for="(item, index) in computedItems"
+      :key="index"
+      :class="{ active: index == selection }"
+      @click="$emit('handle-selection', index)"
+      @mouseenter="$emit('set-selection', index)"
+    >
+      <span> {{ item.slice(0, highlightStart(item)) }} </span>
+      <strong> {{ item.substr(highlightStart(item), matchLength) }} </strong>
+      <span> {{ item.slice(highlightStart(item) + matchLength) }} </span>
+    </li>
+  </ul>
+</template>
 <script lang="ts" setup>
 import { computed, toRefs, watch } from "vue";
 import type { PropType } from "vue";
@@ -54,7 +73,7 @@ const emit = defineEmits(["handle-selection", "set-selection"]);
 const { maxOptions, selection, options, matchStart, matchLength, modelValue } =
   toRefs(props);
 
-// edge case where 'undefined' returned
+// edge case: sometimes 'undefined' is emitted
 watch(selection, (newSelectionValue) => {
   if (newSelectionValue >= options.value.length) {
     emit("set-selection", 0);
@@ -78,26 +97,6 @@ const computedItems = computed((): string[] => {
   return [];
 });
 </script>
-<template>
-  <template v-if="helperVisible && options.length > 0">
-    <ul
-      class="vue-autocomplete-input"
-      :style="`left: ${left + offsetX}; top: ${top + offsetY}px`"
-    >
-      <li
-        v-for="(item, index) in computedItems"
-        :key="index"
-        :class="{ active: index == selection }"
-        @click="$emit('handle-selection', index)"
-        @mouseenter="$emit('set-selection', index)"
-      >
-        {{ item.slice(0, highlightStart(item)) }}
-        <strong> {{ item.substr(highlightStart(item), matchLength) }} </strong>
-        {{ item.slice(highlightStart(item) + matchLength) }}
-      </li>
-    </ul>
-  </template>
-</template>
 <style scoped>
 .vue-autocomplete-input {
   background-clip: padding-box;

@@ -14,8 +14,8 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: path.resolve(__dirname, "src/main.ts"),
-      name: "VueAutoCompleteTriggered",
+      entry: path.resolve(__dirname, "src/components/index.ts"),
+      name: "vue-autocomplete-triggered",
       fileName: (format) => `vue-autocomplete-triggered.${format}.js`,
     },
     rollupOptions: {
