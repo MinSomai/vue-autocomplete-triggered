@@ -1,31 +1,29 @@
 <template>
-  <div>
-    <textarea
-      name="my-textarea"
-      id="myTextarea"
-      rows="2"
-      ref="inputRef"
-      v-model="inputValue"
-      @keydown="handleKeyDown"
-      v-bind="$attrs"
-    ></textarea>
+  <textarea
+    name="my-textarea"
+    id="myTextarea"
+    rows="2"
+    ref="inputRef"
+    v-model="inputValue"
+    @keydown="handleKeyDown"
+    v-bind="$attrs"
+  ></textarea>
 
-    <OptionsList
-      :helper-visible="state.helperVisible"
-      :left="state.left"
-      :top="state.top"
-      :match-start="state.matchStart"
-      :match-length="state.matchLength"
-      :max-options="maxOptions"
-      :options="state.options"
-      :selection="state.selection"
-      :offset-x="offsetX"
-      :offset-y="offsetY"
-      v-model="inputValue"
-      @handle-selection="handleSelection"
-      @set-selection="(hoveredIndex) => (state.selection = hoveredIndex)"
-    />
-  </div>
+  <OptionsList
+    :helper-visible="state.helperVisible"
+    :left="state.left"
+    :top="state.top"
+    :match-start="state.matchStart"
+    :match-length="state.matchLength"
+    :max-options="maxOptions"
+    :options="state.options"
+    :selection="state.selection"
+    :offset-x="offsetX"
+    :offset-y="offsetY"
+    v-model="inputValue"
+    @handle-selection="handleSelection"
+    @set-selection="(hoveredIndex) => (state.selection = hoveredIndex)"
+  />
 </template>
 <script lang="ts" setup>
 import { ref, reactive, watch, toRefs, nextTick } from "vue";
@@ -91,7 +89,7 @@ let props = withDefaults(defineProps<PropTypesI>(), {
   spaceRemovers: () => [",", ".", "!", "?"],
   spacer: " ",
   offsetX: 0,
-  offsetY: 20,
+  offsetY: 3,
   modelValue: null,
   passThroughEnter: false,
 });
@@ -136,6 +134,7 @@ const OPTION_LIST_MIN_WIDTH = 100;
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputValue = ref<string>("");
 
+// TODO: use modelValue for default input
 // const inputValue: WritableComputedRef<string> = computed({
 //   get(): string {
 //     console.log(modelValue.value);
